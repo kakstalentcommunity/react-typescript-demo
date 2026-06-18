@@ -91,7 +91,7 @@ const Finance = () => {
           </Card>
           <Card>
             <CreditCard className="text-amber-300" size={21} />
-            <p className="mt-3 text-2xl font-bold">$0</p>
+            <p className="mt-3 text-2xl font-bold">KSH 0</p>
             <p className="text-sm text-slate-400">Expenses</p>
           </Card>
           <Card>

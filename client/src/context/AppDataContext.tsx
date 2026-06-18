@@ -12,17 +12,28 @@ import {
   transactions as initialTransactions,
 } from "../data/systemData";
 import type { Employee, InventoryItem, Transaction } from "../data/systemData";
+import {
+  createEmployee,
+  createFinanceRecord,
+  createInventoryItem,
+  deleteEmployeeByEmail,
+  deleteFinanceRecord,
+  deleteInventoryItemBySku,
+  fetchEmployees,
+  fetchFinance,
+  fetchInventory,
+} from "../services/erpAPI";
 
 type AppDataContextValue = {
   employees: Employee[];
   inventory: InventoryItem[];
   transactions: Transaction[];
-  addEmployee: (employee: Employee) => void;
-  deleteEmployee: (email: string) => void;
-  addInventoryItem: (item: InventoryItem) => void;
-  deleteInventoryItem: (sku: string) => void;
-  addTransaction: (transaction: Transaction) => void;
-  deleteTransaction: (id: string) => void;
+  addEmployee: (employee: Employee) => Promise<void>;
+  deleteEmployee: (email: string) => Promise<void>;
+  addInventoryItem: (item: InventoryItem) => Promise<void>;
+  deleteInventoryItem: (sku: string) => Promise<void>;
+  addTransaction: (transaction: Transaction) => Promise<void>;
+  deleteTransaction: (id: string) => Promise<void>;
 };
 
 const AppDataContext = createContext<AppDataContextValue | null>(null);
@@ -52,6 +63,32 @@ export const AppDataProvider = ({ children }: Props) => {
   );
 
   useEffect(() => {
+    const token = localStorage.getItem("erp_token");
+
+    if (!token) {
+      return;
+    }
+
+    const loadData = async () => {
+      try {
+        const [employeeData, inventoryData, financeData] = await Promise.all([
+          fetchEmployees(),
+          fetchInventory(),
+          fetchFinance(),
+        ]);
+
+        setEmployees(employeeData);
+        setInventory(inventoryData);
+        setTransactions(financeData);
+      } catch (error) {
+        console.error("Failed to load ERP data:", error);
+      }
+    };
+
+    void loadData();
+  }, []);
+
+  useEffect(() => {
     localStorage.setItem("erp_employees", JSON.stringify(employees));
   }, [employees]);
 
@@ -68,27 +105,60 @@ export const AppDataProvider = ({ children }: Props) => {
       employees,
       inventory,
       transactions,
-      addEmployee: (employee) =>
-        setEmployees((currentEmployees) => [employee, ...currentEmployees]),
-      deleteEmployee: (email) =>
-        setEmployees((currentEmployees) =>
-          currentEmployees.filter((employee) => employee.email !== email)
-        ),
-      addInventoryItem: (item) =>
-        setInventory((currentInventory) => [item, ...currentInventory]),
-      deleteInventoryItem: (sku) =>
-        setInventory((currentInventory) =>
-          currentInventory.filter((item) => item.sku !== sku)
-        ),
-      addTransaction: (transaction) =>
-        setTransactions((currentTransactions) => [
-          transaction,
-          ...currentTransactions,
-        ]),
-      deleteTransaction: (id) =>
-        setTransactions((currentTransactions) =>
-          currentTransactions.filter((transaction) => transaction.id !== id)
-        ),
+      addEmployee: async (employee) => {
+        try {
+          const savedEmployee = await createEmployee(employee);
+          setEmployees((currentEmployees) => [savedEmployee, ...currentEmployees]);
+        } catch (error) {
+          console.error("Failed to create employee:", error);
+        }
+      },
+      deleteEmployee: async (email) => {
+        try {
+          await deleteEmployeeByEmail(email);
+          setEmployees((currentEmployees) =>
+            currentEmployees.filter((employee) => employee.email !== email)
+          );
+        } catch (error) {
+          console.error("Failed to delete employee:", error);
+        }
+      },
+      addInventoryItem: async (item) => {
+        try {
+          const savedItem = await createInventoryItem(item);
+          setInventory((currentInventory) => [savedItem, ...currentInventory]);
+        } catch (error) {
+          console.error("Failed to create inventory item:", error);
+        }
+      },
+      deleteInventoryItem: async (sku) => {
+        try {
+          await deleteInventoryItemBySku(sku);
+          setInventory((currentInventory) =>
+            currentInventory.filter((item) => item.sku !== sku)
+          );
+        } catch (error) {
+          console.error("Failed to delete inventory item:", error);
+        }
+      },
+      addTransaction: async (transaction) => {
+        try {
+          const savedInvoice = await createFinanceRecord(transaction);
+          setTransactions((currentTransactions) => [savedInvoice, ...currentTransactions]);
+        } catch (error) {
+          console.error("Failed to create finance transaction:", error);
+        }
+      },
+      deleteTransaction: async (id) => {
+        try {
+          await deleteFinanceRecord(id);
+          setTransactions((currentTransactions) =>
+            currentTransactions.filter((transaction) => transaction.id !== id)
+          );
+        } catch (error) {
+          console.error("Failed to delete finance transaction:", error);
+        }
+      },
     }),
     [employees, inventory, transactions]
   );

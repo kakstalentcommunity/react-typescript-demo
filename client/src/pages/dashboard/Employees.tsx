@@ -43,6 +43,16 @@ const Employees = () => {
     );
   }, [employees, searchQuery]);
 
+  const loadedEmployeeCount = employees.length;
+  const loadedRoleCount = useMemo(
+    () => new Set(employees.map((employee) => employee.role).filter(Boolean)).size,
+    [employees]
+  );
+  const pendingInviteCount = useMemo(
+    () => employees.filter((employee) => employee.status === "Invited").length,
+    [employees]
+  );
+
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -83,24 +93,36 @@ const Employees = () => {
               <span className="text-sm text-slate-400">Employees</span>
               <Users className="text-sky-300" size={20} />
             </div>
-            <p className="mt-3 text-3xl font-bold">{employees.length}</p>
-            <p className="mt-2 text-sm text-slate-400">No demo records loaded</p>
+            <p className="mt-3 text-3xl font-bold">{loadedEmployeeCount}</p>
+            <p className="mt-2 text-sm text-slate-400">
+              {loadedEmployeeCount > 0
+                ? `${loadedEmployeeCount} employee${loadedEmployeeCount === 1 ? "" : "s"} loaded`
+                : "No employees loaded"}
+            </p>
           </Card>
           <Card>
             <div className="flex items-center justify-between">
               <span className="text-sm text-slate-400">Open roles</span>
               <ShieldCheck className="text-sky-300" size={20} />
             </div>
-            <p className="mt-3 text-3xl font-bold">0</p>
-            <p className="mt-2 text-sm text-slate-400">No open roles</p>
+            <p className="mt-3 text-3xl font-bold">{loadedRoleCount}</p>
+            <p className="mt-2 text-sm text-slate-400">
+              {loadedRoleCount > 0
+                ? `${loadedRoleCount} role${loadedRoleCount === 1 ? "" : "s"} active`
+                : "No open roles"}
+            </p>
           </Card>
           <Card>
             <div className="flex items-center justify-between">
               <span className="text-sm text-slate-400">Invites pending</span>
               <Mail className="text-sky-300" size={20} />
             </div>
-            <p className="mt-3 text-3xl font-bold">0</p>
-            <p className="mt-2 text-sm text-slate-400">No pending invites</p>
+            <p className="mt-3 text-3xl font-bold">{pendingInviteCount}</p>
+            <p className="mt-2 text-sm text-slate-400">
+              {pendingInviteCount > 0
+                ? `${pendingInviteCount} invite${pendingInviteCount === 1 ? "" : "s"} pending`
+                : "No pending invites"}
+            </p>
           </Card>
         </div>
 
@@ -211,7 +233,7 @@ const Employees = () => {
                   onChange={(event) =>
                     setForm((current) => ({ ...current, name: event.target.value }))
                   }
-                  placeholder="Alex Morgan"
+                  placeholder="Full Name "
                   required
                   value={form.name}
                 />
@@ -271,6 +293,7 @@ const Employees = () => {
                   value={form.status}
                 >
                   <option>Active</option>
+                  <option>Invited</option>
                   <option>Review</option>
                   <option>Onboarding</option>
                 </select>
